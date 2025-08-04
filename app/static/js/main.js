@@ -364,4 +364,94 @@ document.addEventListener('scroll', function() {
     }
 });
 
-console.log('Clay Store JavaScript fully initialized');
+console.log('Clay Store JavaScript fully initialized');\n\n
+// Additional fixes for admin functionality
+document.addEventListener('DOMContentLoaded', function() {
+    // Fix form submission with loading states
+    const forms = document.querySelectorAll('form');
+    forms.forEach(form => {
+        form.addEventListener('submit', function(e) {
+            const submitBtn = form.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                const originalText = submitBtn.innerHTML;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>جاري الحفظ...';
+                submitBtn.disabled = true;
+                
+                // Re-enable after 5 seconds as fallback
+                setTimeout(() => {
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = false;
+                }, 5000);
+            }
+        });
+    });
+    
+    // Fix delete confirmation modals
+    window.confirmDelete = function(id, name) {
+        const modal = document.getElementById('deleteModal');
+        if (modal) {
+            const nameElement = modal.querySelector('#productName, #testimonialCustomerName, #reviewCustomerName');
+            const form = modal.querySelector('#deleteForm');
+            
+            if (nameElement) nameElement.textContent = name;
+            if (form) {
+                // Get current URL and update form action
+                const currentPath = window.location.pathname;
+                if (currentPath.includes('/products')) {
+                    form.action = `/admin/products/${id}/delete`;
+                } else if (currentPath.includes('/testimonials')) {
+                    form.action = `/admin/testimonials/${id}/delete`;
+                } else if (currentPath.includes('/reviews')) {
+                    form.action = `/admin/reviews/${id}/delete`;
+                }
+            }
+            
+            const bootstrapModal = new bootstrap.Modal(modal);
+            bootstrapModal.show();
+        }
+    };
+    
+    // Fix star rating functionality
+    const starInputs = document.querySelectorAll('.star-label input[type="radio"]');
+    starInputs.forEach(input => {
+        input.addEventListener('change', function() {
+            updateStars(parseInt(this.value));
+        });
+    });
+    
+    // Fix color picker updates
+    const colorInputs = document.querySelectorAll('input[type="color"]');
+    colorInputs.forEach(input => {
+        input.addEventListener('change', function() {
+            const span = this.parentNode.querySelector('span');
+            if (span) {
+                span.textContent = this.value;
+            }
+        });
+    });
+    
+    // Fix theme selection
+    window.selectTheme = function(theme) {
+        document.querySelectorAll('.theme-option').forEach(option => {
+            option.classList.remove('selected');
+        });
+        event.target.closest('.theme-option').classList.add('selected');
+        const themeInput = document.getElementById('theme_style');
+        if (themeInput) {
+            themeInput.value = theme;
+        }
+    };
+    
+    console.log('✅ Admin JavaScript fixes loaded');
+});
+
+function updateStars(rating) {
+    const stars = document.querySelectorAll('.star-icon');
+    stars.forEach((star, index) => {
+        if (index < rating) {
+            star.classList.add('active');
+        } else {
+            star.classList.remove('active');
+        }
+    });
+}

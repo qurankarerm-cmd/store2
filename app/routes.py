@@ -19,7 +19,9 @@ def load_user(user_id):
 
 # Helper function for WhatsApp URL
 def create_whatsapp_url(product_name=None, custom_message=None):
-    whatsapp_number = current_app.config['WHATSAPP_NUMBER']
+    # Get WhatsApp number from settings or config
+    settings = SiteSettings.get_settings()
+    whatsapp_number = settings.whatsapp_number or current_app.config.get('WHATSAPP_NUMBER', '201XXXXXXXXX')
     
     if custom_message:
         message = custom_message
@@ -127,36 +129,50 @@ def admin_products():
 @login_required
 def admin_product_new():
     if request.method == 'POST':
-        name = request.form['name']
-        description = request.form['description']
-        price = float(request.form['price'])
-        category = request.form['category']
-        
-        # Handle file upload
-        image_filename = None
-        if 'image' in request.files:
-            file = request.files['image']
-            if file and file.filename != '':
-                filename = secure_filename(file.filename)
-                # Add timestamp to avoid conflicts
-                import time
-                filename = f"{int(time.time())}_{filename}"
-                filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
-                file.save(filepath)
-                image_filename = filename
-        
-        product = Product(
-            name=name,
-            description=description,
-            price=price,
-            category=category,
-            image_filename=image_filename
-        )
-        
-        db.session.add(product)
-        db.session.commit()
-        flash('تم إضافة المنتج بنجاح', 'success')
-        return redirect(url_for('main.admin_products'))
+        try:
+            name = request.form.get('name', '').strip()
+            description = request.form.get('description', '').strip()
+            price = float(request.form.get('price', 0))
+            category = request.form.get('category', '').strip()
+            
+            if not name or price <= 0:
+                flash('الرجاء إدخال اسم المنتج وسعر صحيح', 'error')
+                return render_template('admin/product_form.html', product=None)
+            
+            # Handle file upload
+            image_filename = None
+            if 'image' in request.files:
+                file = request.files['image']
+                if file and file.filename != '':
+                    filename = secure_filename(file.filename)
+                    # Add timestamp to avoid conflicts
+                    import time
+                    filename = f"{int(time.time())}_{filename}"
+                    filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
+                    file.save(filepath)
+                    image_filename = filename
+            
+            featured = 'featured' in request.form
+            
+            product = Product(
+                name=name,
+                description=description,
+                price=price,
+                category=category,
+                image_filename=image_filename,
+                featured=featured
+            )
+            
+            db.session.add(product)
+            db.session.commit()
+            flash('تم إضافة المنتج بنجاح', 'success')
+            return redirect(url_for('main.admin_products'))
+            
+        except ValueError:
+            flash('خطأ في البيانات المدخلة، الرجاء المحاولة مرة أخرى', 'error')
+        except Exception as e:
+            flash(f'خطأ في حفظ المنتج: {str(e)}', 'error')
+            db.session.rollback()
     
     return render_template('admin/product_form.html', product=None)
 
@@ -166,31 +182,48 @@ def admin_product_edit(id):
     product = Product.query.get_or_404(id)
     
     if request.method == 'POST':
-        product.name = request.form['name']
-        product.description = request.form['description']
-        product.price = float(request.form['price'])
-        product.category = request.form['category']
-        
-        # Handle file upload
-        if 'image' in request.files:
-            file = request.files['image']
-            if file and file.filename != '':
-                # Delete old image if exists
-                if product.image_filename:
-                    old_path = os.path.join(current_app.config['UPLOAD_FOLDER'], product.image_filename)
-                    if os.path.exists(old_path):
-                        os.remove(old_path)
-                
-                filename = secure_filename(file.filename)
-                import time
-                filename = f"{int(time.time())}_{filename}"
-                filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
-                file.save(filepath)
-                product.image_filename = filename
-        
-        db.session.commit()
-        flash('تم تحديث المنتج بنجاح', 'success')
-        return redirect(url_for('main.admin_products'))
+        try:
+            name = request.form.get('name', '').strip()
+            description = request.form.get('description', '').strip()
+            price = float(request.form.get('price', 0))
+            category = request.form.get('category', '').strip()
+            
+            if not name or price <= 0:
+                flash('الرجاء إدخال اسم المنتج وسعر صحيح', 'error')
+                return render_template('admin/product_form.html', product=product)
+            
+            product.name = name
+            product.description = description
+            product.price = price
+            product.category = category
+            product.featured = 'featured' in request.form
+            
+            # Handle file upload
+            if 'image' in request.files:
+                file = request.files['image']
+                if file and file.filename != '':
+                    # Delete old image if exists
+                    if product.image_filename:
+                        old_path = os.path.join(current_app.config['UPLOAD_FOLDER'], product.image_filename)
+                        if os.path.exists(old_path):
+                            os.remove(old_path)
+                    
+                    filename = secure_filename(file.filename)
+                    import time
+                    filename = f"{int(time.time())}_{filename}"
+                    filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
+                    file.save(filepath)
+                    product.image_filename = filename
+            
+            db.session.commit()
+            flash('تم تحديث المنتج بنجاح', 'success')
+            return redirect(url_for('main.admin_products'))
+            
+        except ValueError:
+            flash('خطأ في البيانات المدخلة، الرجاء المحاولة مرة أخرى', 'error')
+        except Exception as e:
+            flash(f'خطأ في تحديث المنتج: {str(e)}', 'error')
+            db.session.rollback()
     
     return render_template('admin/product_form.html', product=product)
 
