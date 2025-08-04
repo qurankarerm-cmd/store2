@@ -13,9 +13,7 @@ const nextConfig = {
       },
     ],
   },
-  experimental: {
-    appDir: false,
-  },
+
   i18n: {
     locales: ['ar'],
     defaultLocale: 'ar',
