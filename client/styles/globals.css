@@ -1,0 +1,118 @@
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@200;300;400;500;600;700;800;900&family=Noto+Kufi+Arabic:wght@100;200;300;400;500;600;700;800;900&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* RTL Support */
+html {
+  direction: rtl;
+}
+
+html[dir="rtl"] {
+  direction: rtl;
+}
+
+html[dir="ltr"] {
+  direction: ltr;
+}
+
+body {
+  font-family: 'Cairo', 'Noto Kufi Arabic', sans-serif;
+  direction: rtl;
+  text-align: right;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-gray-100;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-clay-400 rounded-lg;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-clay-500;
+}
+
+/* Arabic Text Styling */
+.arabic-text {
+  font-family: 'Cairo', 'Noto Kufi Arabic', sans-serif;
+  text-align: right;
+  direction: rtl;
+}
+
+/* WhatsApp Button Animation */
+.whatsapp-float {
+  animation: bounce 2s infinite;
+}
+
+.whatsapp-float:hover {
+  animation: none;
+  transform: scale(1.1);
+}
+
+/* Product Card Hover Effects */
+.product-card {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.product-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+}
+
+/* Gradient Text */
+.gradient-text {
+  background: linear-gradient(135deg, #d946ef, #c026d3, #a21caf);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Loading Animation */
+.loading-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Custom Button Styles */
+.btn-primary {
+  @apply bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white font-medium py-3 px-6 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105;
+}
+
+.btn-secondary {
+  @apply bg-clay-500 hover:bg-clay-600 text-white font-medium py-3 px-6 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl;
+}
+
+/* Arabic Number Support */
+.arabic-numbers {
+  font-feature-settings: "lnum";
+}
+
+/* RTL Form Inputs */
+input, textarea, select {
+  direction: rtl;
+  text-align: right;
+}
+
+input[type="number"] {
+  direction: ltr;
+  text-align: left;
+}
+
+/* Mobile Responsive Text */
+@media (max-width: 640px) {
+  .hero-title {
+    font-size: 2rem;
+    line-height: 2.5rem;
+  }
+  
+  .hero-subtitle {
+    font-size: 1.125rem;
+    line-height: 1.75rem;
+  }
+}

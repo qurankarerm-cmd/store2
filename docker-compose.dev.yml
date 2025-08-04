@@ -1,0 +1,103 @@
+version: '3.8'
+
+services:
+  # MongoDB Database (Development)
+  mongodb:
+    image: mongo:7.0-jammy
+    container_name: arabic_clay_mongodb_dev
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin123
+      MONGO_INITDB_DATABASE: arabic-clay-store-dev
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_dev_data:/data/db
+      - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    networks:
+      - arabic-clay-dev-network
+
+  # Express.js API Server (Development with hot reload)
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile.dev
+    container_name: arabic_clay_server_dev
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      PORT: 5000
+      MONGODB_URI: mongodb://admin:admin123@mongodb:27017/arabic-clay-store-dev?authSource=admin
+      JWT_SECRET: dev-secret-key-not-for-production
+      JWT_EXPIRE: 7d
+      CLIENT_URL: http://localhost:3000
+      ADMIN_URL: http://localhost:3001
+      WHATSAPP_NUMBER: 201234567890
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./server:/app
+      - /app/node_modules
+      - uploads_dev_data:/app/uploads
+    networks:
+      - arabic-clay-dev-network
+    depends_on:
+      - mongodb
+    command: npm run dev
+
+  # Next.js Public Website (Development)
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile.dev
+    container_name: arabic_clay_client_dev
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      NEXT_PUBLIC_API_URL: http://localhost:5000/api
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./client:/app
+      - /app/node_modules
+      - /app/.next
+    networks:
+      - arabic-clay-dev-network
+    depends_on:
+      - server
+    command: npm run dev
+
+  # Next.js Admin Dashboard (Development)
+  admin:
+    build:
+      context: ./admin-dashboard
+      dockerfile: Dockerfile.dev
+    container_name: arabic_clay_admin_dev
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      API_BASE_URL: http://server:5000/api
+      NEXT_PUBLIC_API_URL: http://localhost:5000/api
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./admin-dashboard:/app
+      - /app/node_modules
+      - /app/.next
+    networks:
+      - arabic-clay-dev-network
+    depends_on:
+      - server
+    command: npm run dev
+
+networks:
+  arabic-clay-dev-network:
+    driver: bridge
+    name: arabic-clay-dev-network
+
+volumes:
+  mongodb_dev_data:
+    name: arabic_clay_mongodb_dev_data
+  uploads_dev_data:
+    name: arabic_clay_uploads_dev_data

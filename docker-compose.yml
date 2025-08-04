@@ -1,0 +1,121 @@
+version: '3.8'
+
+services:
+  # MongoDB Database
+  mongodb:
+    image: mongo:7.0-jammy
+    container_name: arabic_clay_mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin123
+      MONGO_INITDB_DATABASE: arabic-clay-store
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+      - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    networks:
+      - arabic-clay-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  # Express.js API Server
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: arabic_clay_server
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      MONGODB_URI: mongodb://admin:admin123@mongodb:27017/arabic-clay-store?authSource=admin
+      JWT_SECRET: your-super-secret-jwt-key-change-this-in-production
+      JWT_EXPIRE: 7d
+      CLIENT_URL: http://localhost:3000
+      ADMIN_URL: http://localhost:3001
+      WHATSAPP_NUMBER: 201234567890
+      FACEBOOK_PAGE: amali.bilteen
+      INSTAGRAM_USERNAME: amali_bilteen
+      TIKTOK_USERNAME: amali.bilteen
+      FACEBOOK_MESSENGER: amali.bilteen
+    ports:
+      - "5000:5000"
+    volumes:
+      - uploads_data:/app/uploads
+    networks:
+      - arabic-clay-network
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  # Next.js Public Website (Client)
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: arabic_clay_client
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: http://localhost:5000/api
+    ports:
+      - "3000:3000"
+    networks:
+      - arabic-clay-network
+    depends_on:
+      server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # Next.js Admin Dashboard
+  admin:
+    build:
+      context: ./admin-dashboard
+      dockerfile: Dockerfile
+    container_name: arabic_clay_admin
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      API_BASE_URL: http://server:5000/api
+      NEXT_PUBLIC_API_URL: http://localhost:5000/api
+    ports:
+      - "3001:3001"
+    networks:
+      - arabic-clay-network
+    depends_on:
+      server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+networks:
+  arabic-clay-network:
+    driver: bridge
+    name: arabic-clay-network
+
+volumes:
+  mongodb_data:
+    name: arabic_clay_mongodb_data
+  uploads_data:
+    name: arabic_clay_uploads_data
