@@ -93,13 +93,19 @@ function EditProduct() {
       );
       
       const results = await Promise.all(uploadPromises);
-      const newImages = results.map(result => result.file);
+      console.log('Upload results:', results);
       
+      const newImages = results.map(result => {
+        console.log('Processing result:', result);
+        return result.data.data.file;
+      });
+      
+      console.log('New images:', newImages);
       setImages(prev => [...prev, ...newImages]);
       toast.success(`تم رفع ${newImages.length} صورة بنجاح`);
     } catch (error) {
       console.error('Upload error:', error);
-      toast.error('فشل في رفع الصور');
+      toast.error(`فشل في رفع الصور: ${error.message}`);
     } finally {
       setIsUploading(false);
     }
@@ -127,13 +133,19 @@ function EditProduct() {
 
   const removeImage = async (index) => {
     const imageToRemove = images[index];
+    console.log('Removing image:', imageToRemove);
+    
     try {
-      await uploadAPI.deleteFile(imageToRemove.filename);
+      if (imageToRemove?.filename) {
+        await uploadAPI.deleteFile(imageToRemove.filename);
+      }
       setImages(prev => prev.filter((_, i) => i !== index));
       toast.success('تم حذف الصورة');
     } catch (error) {
       console.error('Delete error:', error);
-      toast.error('فشل في حذف الصورة');
+      // Still remove from UI even if delete fails
+      setImages(prev => prev.filter((_, i) => i !== index));
+      toast.warning('تم حذف الصورة من القائمة ولكن قد تحتاج لحذفها من الخادم يدوياً');
     }
   };
 
@@ -368,9 +380,13 @@ function EditProduct() {
                         {images.map((image, index) => (
                           <div key={index} className="image-preview">
                             <img
-                              src={`http://localhost:5000${image.path}`}
+                              src={`http://localhost:5000${image?.path || ''}`}
                               alt={`Product ${index + 1}`}
                               className="w-full h-24 object-cover rounded-lg"
+                              onError={(e) => {
+                                console.error('Image load error:', image);
+                                e.target.src = '/placeholder-image.png';
+                              }}
                             />
                             <button
                               type="button"
