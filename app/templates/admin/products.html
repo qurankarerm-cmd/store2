@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+
+{% block title %}إدارة المنتجات - لوحة التحكم{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0">
+            <i class="fas fa-box me-2"></i>إدارة المنتجات
+        </h1>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('main.admin_dashboard') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-right me-1"></i>العودة للوحة التحكم
+            </a>
+            <a href="{{ url_for('main.admin_product_new') }}" class="btn btn-primary">
+                <i class="fas fa-plus me-1"></i>منتج جديد
+            </a>
+        </div>
+    </div>
+
+    <!-- Products Table -->
+    <div class="card shadow">
+        <div class="card-body">
+            {% if products %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>الصورة</th>
+                            <th>اسم المنتج</th>
+                            <th>الفئة</th>
+                            <th>السعر</th>
+                            <th>الحالة</th>
+                            <th>تاريخ الإضافة</th>
+                            <th>الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for product in products %}
+                        <tr>
+                            <td>
+                                {% if product.image_filename %}
+                                <img src="{{ url_for('static', filename='uploads/' + product.image_filename) }}" 
+                                     class="rounded" style="width: 60px; height: 60px; object-fit: cover;">
+                                {% else %}
+                                <div class="bg-light rounded d-flex align-items-center justify-content-center" 
+                                     style="width: 60px; height: 60px;">
+                                    <i class="fas fa-image text-muted"></i>
+                                </div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <strong>{{ product.name }}</strong>
+                                {% if product.description %}
+                                <br><small class="text-muted">{{ product.description[:50] }}{% if product.description|length > 50 %}...{% endif %}</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if product.category %}
+                                <span class="badge bg-secondary">{{ product.category }}</span>
+                                {% else %}
+                                <span class="text-muted">غير محدد</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <strong class="text-primary">{{ "%.2f"|format(product.price) }} ج.م</strong>
+                            </td>
+                            <td>
+                                <span class="badge bg-{{ 'success' if product.is_active else 'danger' }}">
+                                    {{ 'نشط' if product.is_active else 'غير نشط' }}
+                                </span>
+                            </td>
+                            <td>
+                                <small>{{ product.created_at.strftime('%d/%m/%Y %H:%M') }}</small>
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <a href="{{ url_for('main.admin_product_edit', id=product.id) }}" 
+                                       class="btn btn-sm btn-outline-primary" title="تعديل">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-sm btn-outline-danger" 
+                                            onclick="confirmDelete({{ product.id }}, '{{ product.name }}')" title="حذف">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-box-open fa-5x text-muted mb-4"></i>
+                <h4 class="text-muted">لا توجد منتجات</h4>
+                <p class="text-muted">ابدأ بإضافة منتجك الأول</p>
+                <a href="{{ url_for('main.admin_product_new') }}" class="btn btn-primary btn-lg">
+                    <i class="fas fa-plus me-2"></i>إضافة منتج جديد
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">تأكيد الحذف</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>هل أنت متأكد من حذف المنتج: <strong id="productName"></strong>؟</p>
+                <p class="text-danger"><small>هذا الإجراء لا يمكن التراجع عنه.</small></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <form id="deleteForm" method="POST" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">حذف</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function confirmDelete(productId, productName) {
+    document.getElementById('productName').textContent = productName;
+    document.getElementById('deleteForm').action = `/admin/products/${productId}/delete`;
+    
+    const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+    deleteModal.show();
+}
+</script>
+{% endblock %}
