@@ -24,8 +24,13 @@
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top">
         <div class="container">
             <a class="navbar-brand fw-bold" href="{{ url_for('main.index') }}">
+                {% if site_settings.logo_filename %}
+                <img src="{{ url_for('static', filename='uploads/' + site_settings.logo_filename) }}" 
+                     alt="{{ site_settings.site_name }}" style="height: 40px; margin-left: 10px;">
+                {% else %}
                 <i class="fas fa-hand-paper me-2"></i>
-                أعمالي بالطين
+                {% endif %}
+                {{ site_settings.site_name }}
             </a>
             
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -69,13 +74,24 @@
                         </a>
                         <ul class="dropdown-menu">
                             <li><a class="dropdown-item" href="{{ url_for('main.admin_dashboard') }}">
-                                <i class="fas fa-tachometer-alt me-1"></i>الإحصائيات
+                                <i class="fas fa-tachometer-alt me-1"></i>لوحة الإحصائيات
                             </a></li>
+                            <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="{{ url_for('main.admin_products') }}">
                                 <i class="fas fa-box me-1"></i>إدارة المنتجات
                             </a></li>
                             <li><a class="dropdown-item" href="{{ url_for('main.admin_reviews') }}">
                                 <i class="fas fa-star me-1"></i>إدارة التقييمات
+                            </a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('main.admin_testimonials') }}">
+                                <i class="fas fa-quote-right me-1"></i>إدارة الشهادات
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('main.admin_settings') }}">
+                                <i class="fas fa-cog me-1"></i>إعدادات الموقع
+                            </a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('main.admin_analytics') }}">
+                                <i class="fas fa-chart-line me-1"></i>التحليلات والتقارير
                             </a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="{{ url_for('main.admin_logout') }}">

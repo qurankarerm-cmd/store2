@@ -3,10 +3,15 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.utils import secure_filename
 from app import db, login_manager
-from app.models import Product, Review, Admin
+from app.models import Product, Review, Admin, SiteSettings, Testimonial
 import urllib.parse
 
 bp = Blueprint('main', __name__)
+
+# Make site settings available to all templates
+@bp.context_processor
+def inject_site_settings():
+    return dict(site_settings=SiteSettings.get_settings())
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -244,3 +249,280 @@ def admin_review_delete(id):
     db.session.commit()
     flash('تم حذف التقييم', 'success')
     return redirect(url_for('main.admin_reviews'))
+
+# Site Settings Routes
+@bp.route('/admin/settings', methods=['GET', 'POST'])
+@login_required
+def admin_settings():
+    settings = SiteSettings.get_settings()
+    
+    if request.method == 'POST':
+        # Basic Settings
+        settings.site_name = request.form['site_name']
+        settings.site_description = request.form['site_description']
+        settings.about_text = request.form['about_text']
+        settings.footer_text = request.form['footer_text']
+        
+        # Contact Information
+        settings.contact_phone = request.form['contact_phone']
+        settings.contact_email = request.form['contact_email']
+        settings.whatsapp_number = request.form['whatsapp_number']
+        
+        # Social Media
+        settings.facebook_url = request.form['facebook_url']
+        settings.instagram_url = request.form['instagram_url']
+        settings.tiktok_url = request.form['tiktok_url']
+        
+        # Theme Settings
+        settings.background_color = request.form['background_color']
+        settings.secondary_color = request.form['secondary_color']
+        settings.accent_color = request.form['accent_color']
+        settings.theme_style = request.form['theme_style']
+        
+        # Feature Toggles
+        settings.show_reviews = 'show_reviews' in request.form
+        settings.show_custom_orders = 'show_custom_orders' in request.form
+        settings.maintenance_mode = 'maintenance_mode' in request.form
+        
+        # Handle Logo Upload
+        if 'logo' in request.files:
+            file = request.files['logo']
+            if file and file.filename != '':
+                # Delete old logo
+                if settings.logo_filename:
+                    old_path = os.path.join(current_app.config['UPLOAD_FOLDER'], settings.logo_filename)
+                    if os.path.exists(old_path):
+                        os.remove(old_path)
+                
+                filename = secure_filename(file.filename)
+                import time
+                filename = f"logo_{int(time.time())}_{filename}"
+                filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
+                file.save(filepath)
+                settings.logo_filename = filename
+        
+        # Handle Hero Image Upload
+        if 'hero_image' in request.files:
+            file = request.files['hero_image']
+            if file and file.filename != '':
+                # Delete old hero image
+                if settings.hero_image_filename:
+                    old_path = os.path.join(current_app.config['UPLOAD_FOLDER'], settings.hero_image_filename)
+                    if os.path.exists(old_path):
+                        os.remove(old_path)
+                
+                filename = secure_filename(file.filename)
+                import time
+                filename = f"hero_{int(time.time())}_{filename}"
+                filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
+                file.save(filepath)
+                settings.hero_image_filename = filename
+        
+        db.session.commit()
+        flash('تم تحديث إعدادات الموقع بنجاح', 'success')
+        return redirect(url_for('main.admin_settings'))
+    
+    return render_template('admin/settings.html', settings=settings)
+
+# Testimonials Management
+@bp.route('/admin/testimonials')
+@login_required
+def admin_testimonials():
+    testimonials = Testimonial.query.order_by(Testimonial.display_order.asc(), Testimonial.created_at.desc()).all()
+    return render_template('admin/testimonials.html', testimonials=testimonials)
+
+@bp.route('/admin/testimonials/new', methods=['GET', 'POST'])
+@login_required
+def admin_testimonial_new():
+    if request.method == 'POST':
+        customer_name = request.form['customer_name']
+        customer_title = request.form['customer_title']
+        testimonial_text = request.form['testimonial_text']
+        rating = int(request.form['rating'])
+        display_order = int(request.form.get('display_order', 0))
+        is_featured = 'is_featured' in request.form
+        
+        # Handle image upload
+        image_filename = None
+        if 'image' in request.files:
+            file = request.files['image']
+            if file and file.filename != '':
+                filename = secure_filename(file.filename)
+                import time
+                filename = f"testimonial_{int(time.time())}_{filename}"
+                filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
+                file.save(filepath)
+                image_filename = filename
+        
+        testimonial = Testimonial(
+            customer_name=customer_name,
+            customer_title=customer_title,
+            testimonial_text=testimonial_text,
+            rating=rating,
+            image_filename=image_filename,
+            is_featured=is_featured,
+            display_order=display_order
+        )
+        
+        db.session.add(testimonial)
+        db.session.commit()
+        flash('تم إضافة الشهادة بنجاح', 'success')
+        return redirect(url_for('main.admin_testimonials'))
+    
+    return render_template('admin/testimonial_form.html', testimonial=None)
+
+@bp.route('/admin/testimonials/<int:id>/edit', methods=['GET', 'POST'])
+@login_required
+def admin_testimonial_edit(id):
+    testimonial = Testimonial.query.get_or_404(id)
+    
+    if request.method == 'POST':
+        testimonial.customer_name = request.form['customer_name']
+        testimonial.customer_title = request.form['customer_title']
+        testimonial.testimonial_text = request.form['testimonial_text']
+        testimonial.rating = int(request.form['rating'])
+        testimonial.display_order = int(request.form.get('display_order', 0))
+        testimonial.is_featured = 'is_featured' in request.form
+        testimonial.is_active = 'is_active' in request.form
+        
+        # Handle image upload
+        if 'image' in request.files:
+            file = request.files['image']
+            if file and file.filename != '':
+                # Delete old image
+                if testimonial.image_filename:
+                    old_path = os.path.join(current_app.config['UPLOAD_FOLDER'], testimonial.image_filename)
+                    if os.path.exists(old_path):
+                        os.remove(old_path)
+                
+                filename = secure_filename(file.filename)
+                import time
+                filename = f"testimonial_{int(time.time())}_{filename}"
+                filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
+                file.save(filepath)
+                testimonial.image_filename = filename
+        
+        db.session.commit()
+        flash('تم تحديث الشهادة بنجاح', 'success')
+        return redirect(url_for('main.admin_testimonials'))
+    
+    return render_template('admin/testimonial_form.html', testimonial=testimonial)
+
+@bp.route('/admin/testimonials/<int:id>/delete', methods=['POST'])
+@login_required
+def admin_testimonial_delete(id):
+    testimonial = Testimonial.query.get_or_404(id)
+    
+    # Delete associated image
+    if testimonial.image_filename:
+        filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], testimonial.image_filename)
+        if os.path.exists(filepath):
+            os.remove(filepath)
+    
+    db.session.delete(testimonial)
+    db.session.commit()
+    flash('تم حذف الشهادة بنجاح', 'success')
+    return redirect(url_for('main.admin_testimonials'))
+
+# Enhanced Review Management with Ratings
+@bp.route('/admin/reviews/<int:id>/feature', methods=['POST'])
+@login_required
+def admin_review_feature(id):
+    review = Review.query.get_or_404(id)
+    review.is_featured = not review.is_featured
+    db.session.commit()
+    action = 'تمييز' if review.is_featured else 'إلغاء تمييز'
+    flash(f'تم {action} التقييم', 'success')
+    return redirect(url_for('main.admin_reviews'))
+
+@bp.route('/admin/reviews/new', methods=['GET', 'POST'])
+@login_required
+def admin_review_new():
+    if request.method == 'POST':
+        customer_name = request.form['customer_name']
+        comment = request.form['comment']
+        rating = int(request.form['rating'])
+        product_id = request.form.get('product_id') or None
+        is_approved = 'is_approved' in request.form
+        is_featured = 'is_featured' in request.form
+        
+        # Handle image upload
+        image_filename = None
+        if 'image' in request.files:
+            file = request.files['image']
+            if file and file.filename != '':
+                filename = secure_filename(file.filename)
+                import time
+                filename = f"review_{int(time.time())}_{filename}"
+                filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
+                file.save(filepath)
+                image_filename = filename
+        
+        review = Review(
+            customer_name=customer_name,
+            comment=comment,
+            rating=rating,
+            product_id=product_id if product_id else None,
+            image_filename=image_filename,
+            is_approved=is_approved,
+            is_featured=is_featured
+        )
+        
+        db.session.add(review)
+        db.session.commit()
+        flash('تم إضافة التقييم بنجاح', 'success')
+        return redirect(url_for('main.admin_reviews'))
+    
+    products = Product.query.filter_by(is_active=True).all()
+    return render_template('admin/review_form.html', review=None, products=products)
+
+# Statistics and Analytics
+@bp.route('/admin/analytics')
+@login_required
+def admin_analytics():
+    # Product Statistics
+    total_products = Product.query.count()
+    active_products = Product.query.filter_by(is_active=True).count()
+    featured_products = Product.query.filter_by(featured=True).count()
+    
+    # Review Statistics
+    total_reviews = Review.query.count()
+    approved_reviews = Review.query.filter_by(is_approved=True).count()
+    featured_reviews = Review.query.filter_by(is_featured=True).count()
+    avg_rating = db.session.query(db.func.avg(Review.rating)).filter_by(is_approved=True).scalar() or 0
+    
+    # Testimonial Statistics
+    total_testimonials = Testimonial.query.count()
+    active_testimonials = Testimonial.query.filter_by(is_active=True).count()
+    featured_testimonials = Testimonial.query.filter_by(is_featured=True).count()
+    
+    # Category Statistics
+    categories = db.session.query(Product.category, db.func.count(Product.id)).filter_by(is_active=True).group_by(Product.category).all()
+    
+    # Recent Activity
+    recent_reviews = Review.query.order_by(Review.created_at.desc()).limit(5).all()
+    recent_products = Product.query.order_by(Product.created_at.desc()).limit(5).all()
+    
+    stats = {
+        'products': {
+            'total': total_products,
+            'active': active_products,
+            'featured': featured_products
+        },
+        'reviews': {
+            'total': total_reviews,
+            'approved': approved_reviews,
+            'featured': featured_reviews,
+            'avg_rating': round(avg_rating, 1)
+        },
+        'testimonials': {
+            'total': total_testimonials,
+            'active': active_testimonials,
+            'featured': featured_testimonials
+        },
+        'categories': categories,
+        'recent_reviews': recent_reviews,
+        'recent_products': recent_products
+    }
+    
+    return render_template('admin/analytics.html', stats=stats)

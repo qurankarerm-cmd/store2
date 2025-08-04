@@ -1,0 +1,359 @@
+{% extends "base.html" %}
+
+{% block title %}إعدادات الموقع - لوحة التحكم{% endblock %}
+
+{% block extra_css %}
+<style>
+.settings-section {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 30px;
+}
+
+.color-preview {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    border: 2px solid #dee2e6;
+    display: inline-block;
+    margin-right: 10px;
+}
+
+.theme-option {
+    border: 2px solid #dee2e6;
+    border-radius: 10px;
+    padding: 15px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.theme-option:hover {
+    border-color: #0d6efd;
+}
+
+.theme-option.selected {
+    border-color: #0d6efd;
+    background-color: #e7f1ff;
+}
+
+.image-preview {
+    max-width: 200px;
+    max-height: 200px;
+    border-radius: 10px;
+    margin-top: 10px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0">
+            <i class="fas fa-cog me-2"></i>إعدادات الموقع
+        </h1>
+        <a href="{{ url_for('main.admin_dashboard') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-right me-1"></i>العودة للوحة التحكم
+        </a>
+    </div>
+
+    <form method="POST" enctype="multipart/form-data">
+        <div class="row">
+            <!-- Basic Site Settings -->
+            <div class="col-lg-6">
+                <div class="settings-section">
+                    <h4 class="mb-3">
+                        <i class="fas fa-globe text-primary me-2"></i>
+                        الإعدادات الأساسية
+                    </h4>
+                    
+                    <div class="mb-3">
+                        <label for="site_name" class="form-label">اسم الموقع</label>
+                        <input type="text" class="form-control" id="site_name" name="site_name" 
+                               value="{{ settings.site_name }}" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="site_description" class="form-label">وصف الموقع</label>
+                        <textarea class="form-control" id="site_description" name="site_description" 
+                                  rows="3">{{ settings.site_description }}</textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="about_text" class="form-label">نص "من نحن"</label>
+                        <textarea class="form-control" id="about_text" name="about_text" 
+                                  rows="4">{{ settings.about_text }}</textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="footer_text" class="form-label">نص التذييل</label>
+                        <input type="text" class="form-control" id="footer_text" name="footer_text" 
+                               value="{{ settings.footer_text }}">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contact Information -->
+            <div class="col-lg-6">
+                <div class="settings-section">
+                    <h4 class="mb-3">
+                        <i class="fas fa-phone text-success me-2"></i>
+                        معلومات التواصل
+                    </h4>
+                    
+                    <div class="mb-3">
+                        <label for="whatsapp_number" class="form-label">رقم الواتساب</label>
+                        <input type="text" class="form-control" id="whatsapp_number" name="whatsapp_number" 
+                               value="{{ settings.whatsapp_number }}" placeholder="201XXXXXXXXX">
+                        <small class="form-text text-muted">رقم الواتساب بدون علامة +</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="contact_phone" class="form-label">رقم الهاتف</label>
+                        <input type="text" class="form-control" id="contact_phone" name="contact_phone" 
+                               value="{{ settings.contact_phone }}">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="contact_email" class="form-label">البريد الإلكتروني</label>
+                        <input type="email" class="form-control" id="contact_email" name="contact_email" 
+                               value="{{ settings.contact_email }}">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Social Media Links -->
+        <div class="row">
+            <div class="col-12">
+                <div class="settings-section">
+                    <h4 class="mb-3">
+                        <i class="fab fa-facebook text-primary me-2"></i>
+                        روابط التواصل الاجتماعي
+                    </h4>
+                    
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="facebook_url" class="form-label">
+                                <i class="fab fa-facebook me-1"></i>فيسبوك
+                            </label>
+                            <input type="url" class="form-control" id="facebook_url" name="facebook_url" 
+                                   value="{{ settings.facebook_url }}" placeholder="https://facebook.com/...">
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <label for="instagram_url" class="form-label">
+                                <i class="fab fa-instagram me-1"></i>إنستغرام
+                            </label>
+                            <input type="url" class="form-control" id="instagram_url" name="instagram_url" 
+                                   value="{{ settings.instagram_url }}" placeholder="https://instagram.com/...">
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <label for="tiktok_url" class="form-label">
+                                <i class="fab fa-tiktok me-1"></i>تيك توك
+                            </label>
+                            <input type="url" class="form-control" id="tiktok_url" name="tiktok_url" 
+                                   value="{{ settings.tiktok_url }}" placeholder="https://tiktok.com/@...">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Visual Design -->
+        <div class="row">
+            <!-- Logo and Images -->
+            <div class="col-lg-6">
+                <div class="settings-section">
+                    <h4 class="mb-3">
+                        <i class="fas fa-image text-warning me-2"></i>
+                        الصور والشعار
+                    </h4>
+                    
+                    <div class="mb-4">
+                        <label for="logo" class="form-label">شعار الموقع</label>
+                        {% if settings.logo_filename %}
+                        <div class="mb-2">
+                            <img src="{{ url_for('static', filename='uploads/' + settings.logo_filename) }}" 
+                                 class="image-preview" alt="الشعار الحالي">
+                            <p class="text-muted small">الشعار الحالي</p>
+                        </div>
+                        {% endif %}
+                        <input type="file" class="form-control" id="logo" name="logo" accept="image/*">
+                        <small class="form-text text-muted">اختر صورة جديدة للشعار (اختياري)</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="hero_image" class="form-label">صورة الصفحة الرئيسية</label>
+                        {% if settings.hero_image_filename %}
+                        <div class="mb-2">
+                            <img src="{{ url_for('static', filename='uploads/' + settings.hero_image_filename) }}" 
+                                 class="image-preview" alt="صورة الصفحة الرئيسية">
+                            <p class="text-muted small">الصورة الحالية</p>
+                        </div>
+                        {% endif %}
+                        <input type="file" class="form-control" id="hero_image" name="hero_image" accept="image/*">
+                        <small class="form-text text-muted">صورة خلفية للصفحة الرئيسية (اختياري)</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Theme Colors -->
+            <div class="col-lg-6">
+                <div class="settings-section">
+                    <h4 class="mb-3">
+                        <i class="fas fa-palette text-info me-2"></i>
+                        ألوان الموقع
+                    </h4>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="background_color" class="form-label">اللون الأساسي</label>
+                            <div class="d-flex align-items-center">
+                                <input type="color" class="form-control form-control-color" 
+                                       id="background_color" name="background_color" 
+                                       value="{{ settings.background_color }}" title="اختر اللون الأساسي">
+                                <span class="ms-2">{{ settings.background_color }}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="secondary_color" class="form-label">اللون الثانوي</label>
+                            <div class="d-flex align-items-center">
+                                <input type="color" class="form-control form-control-color" 
+                                       id="secondary_color" name="secondary_color" 
+                                       value="{{ settings.secondary_color }}" title="اختر اللون الثانوي">
+                                <span class="ms-2">{{ settings.secondary_color }}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="accent_color" class="form-label">لون التمييز</label>
+                            <div class="d-flex align-items-center">
+                                <input type="color" class="form-control form-control-color" 
+                                       id="accent_color" name="accent_color" 
+                                       value="{{ settings.accent_color }}" title="اختر لون التمييز">
+                                <span class="ms-2">{{ settings.accent_color }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="theme_style" class="form-label">نمط التصميم</label>
+                        <div class="row">
+                            <div class="col-4">
+                                <div class="theme-option {{ 'selected' if settings.theme_style == 'modern' }}" 
+                                     onclick="selectTheme('modern')">
+                                    <i class="fas fa-rocket fa-2x mb-2"></i>
+                                    <p>عصري</p>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="theme-option {{ 'selected' if settings.theme_style == 'classic' }}" 
+                                     onclick="selectTheme('classic')">
+                                    <i class="fas fa-building-columns fa-2x mb-2"></i>
+                                    <p>كلاسيكي</p>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="theme-option {{ 'selected' if settings.theme_style == 'minimal' }}" 
+                                     onclick="selectTheme('minimal')">
+                                    <i class="fas fa-circle fa-2x mb-2"></i>
+                                    <p>بسيط</p>
+                                </div>
+                            </div>
+                        </div>
+                        <input type="hidden" id="theme_style" name="theme_style" value="{{ settings.theme_style }}">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Feature Toggles -->
+        <div class="row">
+            <div class="col-12">
+                <div class="settings-section">
+                    <h4 class="mb-3">
+                        <i class="fas fa-toggle-on text-success me-2"></i>
+                        إعدادات المميزات
+                    </h4>
+                    
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="show_reviews" 
+                                       name="show_reviews" {{ 'checked' if settings.show_reviews }}>
+                                <label class="form-check-label" for="show_reviews">
+                                    <i class="fas fa-star me-1"></i>عرض التقييمات
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-3 mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="show_custom_orders" 
+                                       name="show_custom_orders" {{ 'checked' if settings.show_custom_orders }}>
+                                <label class="form-check-label" for="show_custom_orders">
+                                    <i class="fas fa-paint-brush me-1"></i>الطلبات الخاصة
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-3 mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="maintenance_mode" 
+                                       name="maintenance_mode" {{ 'checked' if settings.maintenance_mode }}>
+                                <label class="form-check-label" for="maintenance_mode">
+                                    <i class="fas fa-tools me-1"></i>وضع الصيانة
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="row">
+            <div class="col-12">
+                <div class="d-flex justify-content-between">
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        <i class="fas fa-save me-2"></i>حفظ الإعدادات
+                    </button>
+                    <div>
+                        <a href="{{ url_for('main.index') }}" class="btn btn-success btn-lg" target="_blank">
+                            <i class="fas fa-eye me-2"></i>معاينة الموقع
+                        </a>
+                        <a href="{{ url_for('main.admin_dashboard') }}" class="btn btn-secondary btn-lg">
+                            <i class="fas fa-arrow-right me-2"></i>إلغاء
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+function selectTheme(theme) {
+    document.querySelectorAll('.theme-option').forEach(option => {
+        option.classList.remove('selected');
+    });
+    event.target.closest('.theme-option').classList.add('selected');
+    document.getElementById('theme_style').value = theme;
+}
+
+// Update color display when color changes
+document.querySelectorAll('input[type="color"]').forEach(input => {
+    input.addEventListener('change', function() {
+        const span = this.parentNode.querySelector('span');
+        if (span) {
+            span.textContent = this.value;
+        }
+    });
+});
+</script>
+{% endblock %}
