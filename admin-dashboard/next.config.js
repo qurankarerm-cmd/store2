@@ -2,19 +2,12 @@
 const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
-  output: 'standalone', // Required for Docker builds
   images: {
     domains: ['localhost'],
     remotePatterns: [
       {
         protocol: 'http',
         hostname: 'localhost',
-        port: '5000',
-        pathname: '/uploads/**',
-      },
-      {
-        protocol: 'http',
-        hostname: 'server', // Docker service name
         port: '5000',
         pathname: '/uploads/**',
       },
@@ -28,7 +21,7 @@ const nextConfig = {
     defaultLocale: 'ar',
   },
   env: {
-    API_BASE_URL: process.env.API_BASE_URL || 'http://server:5000/api',
+    API_BASE_URL: process.env.API_BASE_URL || 'http://localhost:5000/api',
   },
 }
 
