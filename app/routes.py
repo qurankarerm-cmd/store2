@@ -509,6 +509,127 @@ def admin_review_new():
     products = Product.query.filter_by(is_active=True).all()
     return render_template('admin/review_form.html', review=None, products=products)
 
+@bp.route('/admin/reviews/<int:id>/edit', methods=['GET', 'POST'])
+@login_required
+def admin_review_edit(id):
+    review = Review.query.get_or_404(id)
+    
+    if request.method == 'POST':
+        try:
+            review.customer_name = request.form.get('customer_name', '').strip()
+            review.comment = request.form.get('comment', '').strip()
+            review.rating = int(request.form.get('rating', 5))
+            review.product_id = request.form.get('product_id') or None
+            review.is_approved = 'is_approved' in request.form
+            review.is_featured = 'is_featured' in request.form
+            
+            # Handle image upload
+            if 'image' in request.files:
+                file = request.files['image']
+                if file and file.filename != '':
+                    # Delete old image
+                    if review.image_filename:
+                        old_path = os.path.join(current_app.config['UPLOAD_FOLDER'], review.image_filename)
+                        if os.path.exists(old_path):
+                            os.remove(old_path)
+                    
+                    filename = secure_filename(file.filename)
+                    import time
+                    filename = f"review_{int(time.time())}_{filename}"
+                    filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
+                    file.save(filepath)
+                    review.image_filename = filename
+            
+            db.session.commit()
+            flash('تم تحديث التقييم بنجاح', 'success')
+            return redirect(url_for('main.admin_reviews'))
+            
+        except ValueError:
+            flash('خطأ في البيانات المدخلة', 'error')
+        except Exception as e:
+            flash(f'خطأ في تحديث التقييم: {str(e)}', 'error')
+            db.session.rollback()
+    
+    products = Product.query.filter_by(is_active=True).all()
+    return render_template('admin/review_form.html', review=review, products=products)
+
+@bp.route('/admin/reviews/<int:id>/update-rating', methods=['POST'])
+@login_required
+def admin_review_update_rating(id):
+    try:
+        review = Review.query.get_or_404(id)
+        data = request.get_json()
+        rating = data.get('rating')
+        
+        if not rating or rating < 1 or rating > 5:
+            return jsonify({'success': False, 'message': 'تقييم غير صحيح'})
+        
+        review.rating = rating
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': 'تم تحديث التقييم بنجاح'})
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)})
+
+@bp.route('/admin/reviews/bulk-action', methods=['POST'])
+@login_required
+def admin_reviews_bulk_action():
+    try:
+        data = request.get_json()
+        action = data.get('action')
+        review_ids = data.get('review_ids', [])
+        
+        if not review_ids:
+            return jsonify({'success': False, 'message': 'لم يتم اختيار أي تقييمات'})
+        
+        reviews = Review.query.filter(Review.id.in_(review_ids)).all()
+        
+        if action == 'approve':
+            for review in reviews:
+                review.is_approved = True
+            message = f'تم اعتماد {len(reviews)} تقييم'
+            
+        elif action == 'reject':
+            for review in reviews:
+                review.is_approved = False
+            message = f'تم رفض {len(reviews)} تقييم'
+            
+        elif action == 'feature':
+            for review in reviews:
+                review.is_featured = True
+            message = f'تم تمييز {len(reviews)} تقييم'
+            
+        elif action == 'delete':
+            for review in reviews:
+                # Delete associated images
+                if review.image_filename:
+                    filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], review.image_filename)
+                    if os.path.exists(filepath):
+                        os.remove(filepath)
+                db.session.delete(review)
+            message = f'تم حذف {len(reviews)} تقييم'
+            
+        elif action == 'update_rating':
+            new_rating = data.get('rating')
+            if not new_rating or new_rating < 1 or new_rating > 5:
+                return jsonify({'success': False, 'message': 'تقييم غير صحيح'})
+            
+            for review in reviews:
+                review.rating = new_rating
+            message = f'تم تحديث تقييم {len(reviews)} عنصر إلى {new_rating} نجوم'
+            
+        else:
+            return jsonify({'success': False, 'message': 'إجراء غير معروف'})
+        
+        db.session.commit()
+        return jsonify({'success': True, 'message': message})
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)})
+
 # Statistics and Analytics
 @bp.route('/admin/analytics')
 @login_required

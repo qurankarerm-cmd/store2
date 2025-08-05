@@ -65,8 +65,12 @@ class SiteSettings(db.Model):
     facebook_url = db.Column(db.String(200))
     instagram_url = db.Column(db.String(200))
     tiktok_url = db.Column(db.String(200))
-    about_text = db.Column(db.Text)
+    about_text = db.Column(db.Text, default='مرحباً بكم في عالم الإبداع والفن اليدوي! نحن متخصصون في صناعة منتجات فريدة من طين البوليمر بأعلى معايير الجودة والإتقان. كل قطعة تُصنع بحب وعناية خاصة لتناسب ذوقكم المميز.')
     footer_text = db.Column(db.Text, default='جميع الحقوق محفوظة')
+    
+    # Homepage customization
+    hero_title = db.Column(db.String(200))
+    hero_subtitle = db.Column(db.Text)
     show_reviews = db.Column(db.Boolean, default=True)
     show_custom_orders = db.Column(db.Boolean, default=True)
     maintenance_mode = db.Column(db.Boolean, default=False)

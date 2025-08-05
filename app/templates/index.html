@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}أعمالي بالطين - الرئيسية{% endblock %}
+{% block title %}{{ site_settings.site_name }} - الرئيسية{% endblock %}
 
 {% block content %}
 <!-- Hero Section -->
@@ -8,10 +8,9 @@
     <div class="container">
         <div class="row align-items-center">
             <div class="col-lg-6">
-                <h1 class="display-4 fw-bold mb-4">أعمالي بالطين</h1>
+                <h1 class="display-4 fw-bold mb-4">{{ site_settings.site_name }}</h1>
                 <p class="lead mb-4">
-                    مرحباً بكم في عالم الإبداع والفن اليدوي! نحن متخصصون في صناعة منتجات فريدة من طين البوليمر
-                    بأعلى معايير الجودة والإتقان. كل قطعة تُصنع بحب وعناية خاصة لتناسب ذوقكم المميز.
+                    {{ site_settings.about_text or site_settings.site_description }}
                 </p>
                 <div class="d-flex gap-3">
                     <a href="{{ url_for('main.products') }}" class="btn btn-light btn-lg">
@@ -24,8 +23,12 @@
             </div>
             <div class="col-lg-6">
                 <div class="hero-image text-center">
+                    {% if site_settings.hero_image_filename %}
+                    <img src="{{ url_for('static', filename='uploads/' + site_settings.hero_image_filename) }}" 
+                         alt="{{ site_settings.site_name }}" class="img-fluid rounded shadow-lg" style="max-height: 400px;">
+                    {% else %}
                     <i class="fas fa-hand-paper display-1 text-white-50"></i>
-                    <!-- You can replace this with an actual hero image -->
+                    {% endif %}
                 </div>
             </div>
         </div>

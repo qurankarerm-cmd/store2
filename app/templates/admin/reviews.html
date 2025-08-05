@@ -9,9 +9,67 @@
         <h1 class="h3 mb-0">
             <i class="fas fa-star me-2"></i>إدارة التقييمات
         </h1>
-        <a href="{{ url_for('main.admin_dashboard') }}" class="btn btn-secondary">
-            <i class="fas fa-arrow-right me-1"></i>العودة للوحة التحكم
-        </a>
+        <div class="btn-group">
+            <a href="{{ url_for('main.admin_review_new') }}" class="btn btn-primary">
+                <i class="fas fa-plus me-1"></i>إضافة تقييم
+            </a>
+            <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#ratingStatsModal">
+                <i class="fas fa-chart-bar me-1"></i>إحصائيات التقييمات
+            </button>
+            <button type="button" class="btn btn-warning" onclick="toggleBulkActions()">
+                <i class="fas fa-tasks me-1"></i>الإجراءات المجمعة
+            </button>
+            <a href="{{ url_for('main.admin_dashboard') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-right me-1"></i>العودة
+            </a>
+        </div>
+    </div>
+
+    <!-- Bulk Actions Panel -->
+    <div class="card mb-4" id="bulkActionsPanel" style="display: none;">
+        <div class="card-body">
+            <h5 class="card-title">
+                <i class="fas fa-tasks me-2"></i>الإجراءات المجمعة للتقييمات
+            </h5>
+            <div class="row">
+                <div class="col-md-3">
+                    <button type="button" class="btn btn-success w-100 mb-2" onclick="bulkApprove()">
+                        <i class="fas fa-check me-1"></i>اعتماد المحدد
+                    </button>
+                </div>
+                <div class="col-md-3">
+                    <button type="button" class="btn btn-warning w-100 mb-2" onclick="bulkReject()">
+                        <i class="fas fa-eye-slash me-1"></i>رفض المحدد
+                    </button>
+                </div>
+                <div class="col-md-3">
+                    <button type="button" class="btn btn-info w-100 mb-2" onclick="bulkFeature()">
+                        <i class="fas fa-star me-1"></i>تمييز المحدد
+                    </button>
+                </div>
+                <div class="col-md-3">
+                    <button type="button" class="btn btn-danger w-100 mb-2" onclick="bulkDelete()">
+                        <i class="fas fa-trash me-1"></i>حذف المحدد
+                    </button>
+                </div>
+            </div>
+            <div class="mt-3">
+                <label class="form-label">تغيير التقييم للعناصر المحددة:</label>
+                <div class="d-flex align-items-center">
+                    <div class="rating-input me-2">
+                        {% for i in range(1, 6) %}
+                        <label class="star-label-bulk">
+                            <input type="radio" name="bulk-rating" value="{{ i }}" class="d-none">
+                            <i class="fas fa-star star-icon-bulk" data-rating="{{ i }}"></i>
+                        </label>
+                        {% endfor %}
+                    </div>
+                    <button type="button" class="btn btn-primary" onclick="bulkUpdateRating()">
+                        <i class="fas fa-save me-1"></i>تطبيق التقييم
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Reviews Management -->
@@ -24,15 +82,25 @@
                     <div class="card review-card h-100">
                         <div class="card-header d-flex justify-content-between align-items-center">
                             <div class="d-flex align-items-center">
+                                <input type="checkbox" class="form-check-input me-2 bulk-select" 
+                                       value="{{ review.id }}" id="review-{{ review.id }}">
                                 <i class="fas fa-user-circle fa-2x text-primary me-2"></i>
                                 <div>
                                     <h6 class="mb-0">{{ review.customer_name }}</h6>
                                     <small class="text-muted">{{ review.created_at.strftime('%d/%m/%Y %H:%M') }}</small>
+                                    {% if review.product_id %}
+                                    <small class="d-block text-info">منتج: {{ review.product.name if review.product else 'غير محدد' }}</small>
+                                    {% endif %}
                                 </div>
                             </div>
-                            <span class="badge bg-{{ 'success' if review.is_approved else 'warning' }}">
-                                {{ 'معتمد' if review.is_approved else 'في الانتظار' }}
-                            </span>
+                            <div class="d-flex align-items-center">
+                                {% if review.is_featured %}
+                                <span class="badge bg-warning me-2">مميز</span>
+                                {% endif %}
+                                <span class="badge bg-{{ 'success' if review.is_approved else 'warning' }}">
+                                    {{ 'معتمد' if review.is_approved else 'في الانتظار' }}
+                                </span>
+                            </div>
                         </div>
                         
                         {% if review.image_filename %}
@@ -41,31 +109,75 @@
                         {% endif %}
                         
                         <div class="card-body">
-                            <div class="rating mb-2">
-                                {% for i in range(5) %}
-                                <i class="fas fa-star text-warning"></i>
+                            <div class="rating mb-2" id="rating-display-{{ review.id }}">
+                                {% for i in range(1, 6) %}
+                                    {% if i <= review.rating %}
+                                    <i class="fas fa-star text-warning"></i>
+                                    {% else %}
+                                    <i class="far fa-star text-muted"></i>
+                                    {% endif %}
                                 {% endfor %}
+                                <span class="ms-2 badge bg-info">{{ review.rating }}/5</span>
+                                <button type="button" class="btn btn-sm btn-outline-secondary ms-2" 
+                                        onclick="toggleRatingEdit({{ review.id }})" title="تعديل التقييم">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                            </div>
+                            
+                            <!-- Inline Rating Editor -->
+                            <div class="rating-editor mb-2" id="rating-editor-{{ review.id }}" style="display: none;">
+                                <div class="d-flex align-items-center">
+                                    <div class="rating-input me-2">
+                                        {% for i in range(1, 6) %}
+                                        <label class="star-label-inline">
+                                            <input type="radio" name="rating-{{ review.id }}" value="{{ i }}" 
+                                                   {{ 'checked' if review.rating == i }} class="d-none"
+                                                   onchange="updateRatingStars({{ review.id }}, {{ i }})">
+                                            <i class="fas fa-star star-icon-inline" data-rating="{{ i }}" data-review="{{ review.id }}"></i>
+                                        </label>
+                                        {% endfor %}
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-success me-1" 
+                                            onclick="saveRating({{ review.id }})" title="حفظ">
+                                        <i class="fas fa-save"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-secondary" 
+                                            onclick="cancelRatingEdit({{ review.id }})" title="إلغاء">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
                             </div>
                             <p class="card-text">{{ review.comment }}</p>
                         </div>
                         
                         <div class="card-footer bg-transparent">
-                            <div class="btn-group w-100" role="group">
+                            <div class="d-flex flex-wrap gap-1">
                                 {% if not review.is_approved %}
                                 <form method="POST" action="{{ url_for('main.admin_review_approve', id=review.id) }}" class="flex-fill">
-                                    <button type="submit" class="btn btn-success w-100">
+                                    <button type="submit" class="btn btn-success btn-sm w-100">
                                         <i class="fas fa-check me-1"></i>اعتماد
                                     </button>
                                 </form>
                                 {% else %}
                                 <form method="POST" action="{{ url_for('main.admin_review_reject', id=review.id) }}" class="flex-fill">
-                                    <button type="submit" class="btn btn-warning w-100">
+                                    <button type="submit" class="btn btn-warning btn-sm w-100">
                                         <i class="fas fa-eye-slash me-1"></i>إخفاء
                                     </button>
                                 </form>
                                 {% endif %}
                                 
-                                <button type="button" class="btn btn-danger" 
+                                <form method="POST" action="{{ url_for('main.admin_review_feature', id=review.id) }}" class="flex-fill">
+                                    <button type="submit" class="btn btn-{{ 'outline-warning' if review.is_featured else 'outline-info' }} btn-sm w-100">
+                                        <i class="fas fa-star me-1"></i>{{ 'إلغاء تمييز' if review.is_featured else 'تمييز' }}
+                                    </button>
+                                </form>
+                                
+                                <button type="button" class="btn btn-primary btn-sm" 
+                                        onclick="editReview({{ review.id }})" title="تعديل">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                
+                                <button type="button" class="btn btn-danger btn-sm" 
                                         onclick="confirmDeleteReview({{ review.id }}, '{{ review.customer_name }}')">
                                     <i class="fas fa-trash"></i>
                                 </button>

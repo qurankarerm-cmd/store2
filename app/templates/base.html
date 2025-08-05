@@ -130,42 +130,57 @@
             <div class="row">
                 <div class="col-md-6">
                     <h5 class="mb-3">
+                        {% if site_settings.logo_filename %}
+                        <img src="{{ url_for('static', filename='uploads/' + site_settings.logo_filename) }}"
+                             alt="{{ site_settings.site_name }}" style="height: 30px; margin-left: 10px;">
+                        {% else %}
                         <i class="fas fa-hand-paper me-2"></i>
-                        أعمالي بالطين
+                        {% endif %}
+                        {{ site_settings.site_name }}
                     </h5>
-                    <p>متجر متخصص في صناعة منتجات طين البوليمر اليدوية الفريدة. نقدم منتجات عالية الجودة مصنوعة بحب وإتقان.</p>
+                    <p>{{ site_settings.site_description }}</p>
                 </div>
                 <div class="col-md-6">
                     <h5 class="mb-3">تواصل معنا</h5>
                     <div class="social-links">
-                        <a href="#" class="text-light me-3">
+                        {% if site_settings.whatsapp_number %}
+                        <a href="https://wa.me/{{ site_settings.whatsapp_number }}" class="text-light me-3" target="_blank" title="واتساب">
                             <i class="fab fa-whatsapp fa-2x"></i>
                         </a>
-                        <a href="#" class="text-light me-3">
-                            <i class="fab fa-facebook-messenger fa-2x"></i>
+                        {% endif %}
+                        {% if site_settings.facebook_url %}
+                        <a href="{{ site_settings.facebook_url }}" class="text-light me-3" target="_blank" title="فيسبوك">
+                            <i class="fab fa-facebook fa-2x"></i>
                         </a>
-                        <a href="#" class="text-light me-3">
+                        {% endif %}
+                        {% if site_settings.instagram_url %}
+                        <a href="{{ site_settings.instagram_url }}" class="text-light me-3" target="_blank" title="إنستغرام">
                             <i class="fab fa-instagram fa-2x"></i>
                         </a>
-                        <a href="#" class="text-light">
+                        {% endif %}
+                        {% if site_settings.tiktok_url %}
+                        <a href="{{ site_settings.tiktok_url }}" class="text-light" target="_blank" title="تيك توك">
                             <i class="fab fa-tiktok fa-2x"></i>
                         </a>
+                        {% endif %}
                     </div>
                 </div>
             </div>
             <hr class="my-4">
             <div class="text-center">
-                <p>&copy; 2024 أعمالي بالطين. جميع الحقوق محفوظة.</p>
+                <p>&copy; 2024 {{ site_settings.site_name }}. {{ site_settings.footer_text }}</p>
             </div>
         </div>
     </footer>
 
     <!-- Floating WhatsApp Button -->
+    {% if site_settings.whatsapp_number %}
     <div class="whatsapp-float">
-        <a href="{{ whatsapp_url if whatsapp_url is defined else '#' }}" target="_blank" class="whatsapp-btn">
+        <a href="https://wa.me/{{ site_settings.whatsapp_number }}" target="_blank" class="whatsapp-btn" title="تواصل معنا عبر الواتساب">
             <i class="fab fa-whatsapp"></i>
         </a>
     </div>
+    {% endif %}
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
